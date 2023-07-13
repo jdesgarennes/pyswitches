@@ -22,5 +22,29 @@ A test project to create network based switch configs.
  # Features to add: 
  ## I want to eventually add an option to make the app interactive with a INFOBLOX API, this will allow it to take or find available IP's on the network and even add A records for easy DNS managment. 
 
+
+
+## Installation
+
+### Using pip
+
+1. Make sure you have Python installed on your system (Python 3.6 or later).
+2. Open a terminal/command prompt.
+3. Create a new Python virtual environment (optional but recommended): `python -m venv myenv`
+4. Activate the virtual environment:
+   - On Windows: `myenv\Scripts\activate`
+   - On macOS/Linux: `source myenv/bin/activate`
+5. Install the required dependencies: `pip install -r requirements.txt`
+6. Run the application: `python pyswitch.py`
+
+### Using conda
+
+1. Make sure you have conda installed on your system (Anaconda or Miniconda).
+2. Open a terminal/command prompt.
+3. Create a new conda environment: `conda create -n myenv python=3.9`
+4. Activate the conda environment: `conda activate myenv`
+5. Install the required dependencies: `conda install pyqt`
+6. Run the application: `python pyswitch.py`
+
   ## License type: MIT
 
