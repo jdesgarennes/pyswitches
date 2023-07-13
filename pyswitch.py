@@ -58,7 +58,7 @@ class SwitchConfig(QWidget):
         template = self.template_combo.currentText()
 
         # Load the template file
-        with open("template.txt", "r") as file:
+        with open("./templates/template.txt", "r") as file:
             template_content = file.read()
 
         # Replace the variables in the template
