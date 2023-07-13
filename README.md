@@ -1,5 +1,5 @@
 # pyswitches
-A test project to created network based switch configs
+A test project to create network based switch configs.
 
  ![License-MIT](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
 
@@ -7,7 +7,7 @@ A test project to created network based switch configs
 
   ![Text-Editor](./configurator.jpg)
   
-  # This is a work in progress
+  # This is a work in progress!
   
   ## Description: This Project is a python based app that uses pyqt5 for a qui and is used for creating network based switch configs, in an interactive way.
 
