@@ -2,7 +2,7 @@ import sys
 import csv
 import os
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel, QFileDialog, QMessageBox, QComboBox
-from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtGui import QIcon, QPixmap, QFont
 from PyQt5.QtCore import Qt
 
 class SwitchConfig(QWidget):
@@ -21,6 +21,7 @@ class SwitchConfig(QWidget):
         layout.addWidget(title_bar)
 
         label = QLabel("Switch Config Generator")
+        label.setStyleSheet("font-size: 18px; color: #f45f0b ")  # Increase the font size to 18 pixels
         layout.addWidget(label)
 
         # switch templates  C9300-48U  C3850-12X4 C9300-48T
@@ -32,26 +33,31 @@ class SwitchConfig(QWidget):
         layout.addWidget(self.template_combo)
 
         hostname_label = QLabel("Hostname:")
+        hostname_label.setStyleSheet("font-size: 18px; color: #f45f0b;")  # Increase the font size to 18 pixels
         layout.addWidget(hostname_label)
         self.hostname_entry = QLineEdit()
         layout.addWidget(self.hostname_entry)
 
         mgmt_ip_label = QLabel("Management IP:")
+        mgmt_ip_label.setStyleSheet("font-size: 18px; color: #f45f0b;")  # Increase the font size to 18 pixels
         layout.addWidget(mgmt_ip_label)
         self.mgmt_ip_entry = QLineEdit()
         layout.addWidget(self.mgmt_ip_entry)
 
         passphrase_label = QLabel("Local-Passphrase:")
+        passphrase_label.setStyleSheet("font-size: 18px; color: #f45f0b;")  # Increase the font size to 18 pixels
         layout.addWidget(passphrase_label)
         self.passphrase_entry = QLineEdit()
         layout.addWidget(self.passphrase_entry)
 
         tacsecrete_label = QLabel("Tac-secrete:")
+        tacsecrete_label.setStyleSheet("font-size: 18px; color: #f45f0b;")  # Increase the font size to 18 pixels
         layout.addWidget(tacsecrete_label)
         self.tacsecrete_entry = QLineEdit()
         layout.addWidget(self.tacsecrete_entry)
 
         radius_password_label = QLabel("Radius Password:")
+        radius_password_label.setStyleSheet("font-size: 18px; color: #f45f0b;")  # Increase the font size to 18 pixels
         layout.addWidget(radius_password_label)
         self.radius_password_entry = QLineEdit()
         layout.addWidget(self.radius_password_entry)
