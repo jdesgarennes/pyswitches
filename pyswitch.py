@@ -50,7 +50,7 @@ class SwitchConfig(QWidget):
         self.passphrase_entry = QLineEdit()
         layout.addWidget(self.passphrase_entry)
 
-        tacsecrete_label = QLabel("Tac-secrete:")
+        tacsecrete_label = QLabel("Tac-secret:")
         tacsecrete_label.setStyleSheet("font-size: 18px; color: #f45f0b;")  # Increase the font size to 18 pixels
         layout.addWidget(tacsecrete_label)
         self.tacsecrete_entry = QLineEdit()
