@@ -18,8 +18,8 @@ class SwitchConfig(QWidget):
         template_label = QLabel("Select Template:")
         layout.addWidget(template_label)
         self.template_combo = QComboBox()
-        self.template_combo.addItem("C9300-48U") 
-        self.template_combo.addItem("C3850-12X4")
+        self.template_combo.addItem("C9300-48U-PRC") 
+        self.template_combo.addItem("C3850-12X4-PRC")
         layout.addWidget(self.template_combo)
 
         hostname_label = QLabel("Hostname:")
