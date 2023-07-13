@@ -2,14 +2,23 @@ import sys
 import csv
 import os
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel, QFileDialog, QMessageBox, QComboBox
+from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtCore import Qt
 
 class SwitchConfig(QWidget):
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle("Switch Config Generator")
+        self.setGeometry(100, 100, 800, 600)  # Set window size and position
 
         layout = QVBoxLayout()
+        # This is just adding the window dressing for logo and stuff
+        title_bar = QLabel(self)
+        title_bar.setPixmap(QPixmap("./images/pech-logo-red.png").scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio))
+        title_bar.setAlignment(Qt.AlignCenter)
+        title_bar.setStyleSheet("background-color: #ffffff; border-bottom: 1px solid #cccccc; padding: 10px;")
+        layout.addWidget(title_bar)
 
         label = QLabel("Switch Config Generator")
         layout.addWidget(label)
