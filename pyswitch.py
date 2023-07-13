@@ -14,11 +14,12 @@ class SwitchConfig(QWidget):
         label = QLabel("Switch Config Generator")
         layout.addWidget(label)
 
+        # switch templates  C9300-48U  C3850-12X4 C9300-48T
         template_label = QLabel("Select Template:")
         layout.addWidget(template_label)
         self.template_combo = QComboBox()
-        self.template_combo.addItem("Template 1")
-        self.template_combo.addItem("Template 2")
+        self.template_combo.addItem("C9300-48U") 
+        self.template_combo.addItem("C3850-12X4")
         layout.addWidget(self.template_combo)
 
         hostname_label = QLabel("Hostname:")
@@ -41,6 +42,11 @@ class SwitchConfig(QWidget):
         self.tacsecrete_entry = QLineEdit()
         layout.addWidget(self.tacsecrete_entry)
 
+        radius_password_label = QLabel("Radius Password:")
+        layout.addWidget(radius_password_label)
+        self.radius_password_entry = QLineEdit()
+        layout.addWidget(self.radius_password_entry)
+
         button = QPushButton("Generate Single Config")
         button.clicked.connect(self.generate_config)
         layout.addWidget(button)
@@ -57,9 +63,10 @@ class SwitchConfig(QWidget):
         mgmt_ip = self.mgmt_ip_entry.text()
         passphrase = self.passphrase_entry.text()
         tacsecrete = self.tacsecrete_entry.text()
+        radius_password = self.radius_password_entry.text()
 
         # Generate configuration using the selected template and provided parameters
-        config = self.generate_template(template, hostname, mgmt_ip, passphrase, tacsecrete)
+        config = self.generate_template(template, hostname, mgmt_ip, passphrase, tacsecrete, radius_password)
 
         # Save the configuration to a file
         file_path = self.save_to_file(config, hostname)
@@ -82,16 +89,17 @@ class SwitchConfig(QWidget):
                     mgmt_ip = row['Management IP']
                     passphrase = row['Passphrase']
                     tacsecrete = row['Tacsecrete']
+                    radius_password = row['Radius Password']
 
                     # Generate configuration using the selected template and provided parameters
-                    config = self.generate_template(template, hostname, mgmt_ip, passphrase, tacsecrete)
+                    config = self.generate_template(template, hostname, mgmt_ip, passphrase, tacsecrete, radius_password)
 
                     # Save the configuration to a file
                     self.save_to_file(config, hostname)
 
             QMessageBox.information(self, "Batch Mode", "Batch configuration generation completed.")
 
-    def generate_template(self, template, hostname, mgmt_ip, passphrase, tacsecrete):
+    def generate_template(self, template, hostname, mgmt_ip, passphrase, tacsecrete, radius_password):
         # Read the template file and replace placeholders with provided parameters
         template_dir = "templates"
         template_file = f"{template.lower().replace(' ', '_')}.txt"
@@ -104,6 +112,7 @@ class SwitchConfig(QWidget):
         config = config.replace("{{mgmt_ip}}", mgmt_ip)
         config = config.replace("{{passphrase}}", passphrase)
         config = config.replace("{{tacsecrete}}", tacsecrete)
+        config = config.replace("{{radius_password}}", radius_password)
 
         return config
 

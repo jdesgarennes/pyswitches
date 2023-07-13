@@ -1,18 +1,18 @@
+
 !
-version 16.12
 no service pad
 service tcp-keepalives-in
 service tcp-keepalives-out
-service timestamps debug datetime msec localtime show-timezone year
-service timestamps log datetime msec localtime show-timezone year
+service timestamps debug datetime msec localtime show-timezone
+service timestamps log datetime msec localtime show-timezone
 service password-encryption
 service compress-config
 service sequence-numbers
-! Call-home is enabled by Smart-Licensing.
-service call-home
-platform punt-keepalive disable-kernel-core
 !
-hostname IDF1-7
+hostname {{hostname}}
+!
+boot-start-marker
+boot-end-marker
 !
 !
 vrf definition Mgmt-vrf
@@ -21,18 +21,20 @@ vrf definition Mgmt-vrf
  exit-address-family
  !
  address-family ipv6
- exit-address-familyk
-!         
+ exit-address-family
+!
 logging file flash:logging.txt 20000000 informational
 logging count
-logging buffered informational
+logging buffered warnings
 logging monitor informational
 !
+username prcadmin privilege 15 secret 0 {{passphrase}}
+username prcdeploy privilege 15 password 7 143A1B02151107222D3126667042
 aaa new-model
 !
 !
 aaa group server tacacs+ MANAGE
- server-private 10.1.2.10 key 0 secret7
+ server-private 10.1.2.10 key 0 {{tacsecrete}}
  ip tacacs source-interface Vlan110
 !
 aaa group server radius ise-radius
@@ -51,65 +53,45 @@ aaa accounting commands 15 default start-stop group MANAGE
 !
 !
 !
-!         
+!
 !
 aaa server radius dynamic-author
- client 10.1.3.23 server-key 7 070E296A1D051C00041302020D22782F
- client 10.1.3.24 server-key 7 02070C7D580A0A245F4F00170C1F4100
- client 10.1.3.25 server-key 7 01120E220807030A324D4707100D4419
- client 10.1.3.26 server-key 7 01120E220807030A324D4707100D4419
- client 10.1.3.27 server-key 7 070E296A1D051C00041302020D22782F
+ client 10.1.3.23 server-key 7 0803434B501410401D0305017A0E2122
+ client 10.1.3.24 server-key 7 02240B5E520B1A764346001C55321701
+ client 10.1.3.25 server-key 7 132718175201117D242C21366507160D
+ client 10.1.3.26 server-key 7 01310901020613582E44470C49201218
+ client 10.1.3.27 server-key 7 00261C035D561E510029454B593C001D
 !
 aaa session-id common
 clock timezone PST -8 0
 clock summer-time PST recurring
 switch 1 provision ws-c3850-12x48u
-cisp enable
-!
-!
-!
 !
 !
 coap http enable
 !
-call-home
- ! If contact email address in call-home is configured as sch-smart-licensing@cisco.com
- ! the email address configured in Cisco Smart License Portal will be used as contact email 
-address to send SCH notifications.
- contact-email-addr sch-smart-licensing@cisco.com
- profile "CiscoTAC-1"
-  active
-  destination transport-method http
-  no destination transport-method email
+
+!
+!
+cisp enable
 no ip source-route
-no ip gratuitous-arps
-!
-!
-!
-!
-!
-no ip domain lookup
-ip domain name pechanga.com
-!
-!
-!
-ip dhcp snooping vlan 1-4094
-ip dhcp snooping
 ip arp inspection vlan 1-1024
 ip arp inspection validate ip allow zeros 
-login on-success log
+no ip gratuitous-arps
+!
+no ip domain-lookup
+ip domain-name pechanga.com
+ip dhcp snooping vlan 1-4094
+ip dhcp snooping
 !
 !
-!
-!
-!
+qos queue-softmax-multiplier 100
 vtp domain pechanga
 vtp mode transparent
 udld aggressive
-
-no device-tracking logging theft
+          
 !
-flow record rec-solar
+flow record SOLARWINDS_Record
  match datalink vlan input
  match datalink mac source address input
  match datalink mac destination address input
@@ -128,81 +110,31 @@ flow record rec-solar
  collect timestamp absolute last
 !
 !
-flow exporter exp-solar
- description solarwinds exporter
+flow exporter SOLAR_WINDS
+ description SOLAR_WINDS Flow Exporter
  destination 10.19.2.200
  source Vlan110
  transport udp 2055
 !
 !
-flow monitor mon-solar
- exporter exp-solar
+flow monitor SOLAR_WINDS_MONITOR
+ description SOLARWINDS Flow Monitor
+ exporter SOLAR_WINDS
  cache timeout active 60
- record rec-solar
+ record SOLARWINDS_Record
+!
+!
+crypto pki trustpoint pnplabel
+ revocation-check none
+!
+crypto pki trustpoint TP-self-signed-1536768543
+ enrollment selfsigned
+ subject-name cn=IOS-Self-Signed-Certificate-1536768543
+ revocation-check none
+ rsakeypair TP-self-signed-1536768543
 !
 !
 dot1x system-auth-control
-license boot level ipbasek9
-!
-macro name deploy
-
-snmp-server user snmpv3user snmpv3group v3 auth sha Ojaey7nounohja2 priv aes 128 
-hah8Ieviewi7na3
-
-crypto key gen rsa gen mod 2048
-
-ip ssh version 2
-username prcdeploy privilege 15 password MiiyuMiiyu321
-
-end       
-
-wr
-@
-macro name neat-uplink-config
- description neat-uplink-config
- switchport mode access
- ip arp inspection trust
- authentication order dot1x
- authentication priority dot1x
- authentication port-control auto
- authentication violation restrict
- dot1x pae authenticator
- dot1x timeout tx-period 10
- spanning-tree portfast trunk
- ip dhcp snooping trust
-@
-macro name ise-port-config
- description ise-port-config
- switchport host
- authentication order mab dot1x
- authentication priority dot1x mab
- authentication event fail action next-method
- authentication host-mode multi-auth
- authentication violation restrict
- no authentication open
- mab
- dot1x pae authenticator
- dot1x timeout tx-period 10
- ip access-group ACL-ALLOW in
- ip arp inspection limit rate 1000
- authentication port-control auto
- storm-control broadcast level 20.00
- storm-control multicast level 80.00
- storm-control unicast level 90.00
- storm-control action trap
-@
-!
-macro global description deploy
-diagnostic bootup level minimal
-!
-spanning-tree mode rapid-pvst
-spanning-tree loopguard default
-spanning-tree portfast bpduguard default
-spanning-tree extend system-id
-spanning-tree uplinkfast
-no spanning-tree vlan 314-321,325,360-361,501-504,777-778,799,992-999
-memory free low-watermark processor 79475
-!
 errdisable recovery cause udld
 errdisable recovery cause bpduguard
 errdisable recovery cause security-violation
@@ -216,27 +148,29 @@ errdisable recovery cause psecure-violation
 errdisable recovery cause port-mode-failure
 errdisable recovery cause dhcp-rate-limit
 errdisable recovery cause mac-limit
+errdisable recovery cause vmps
 errdisable recovery cause storm-control
 errdisable recovery cause inline-power
 errdisable recovery cause arp-inspection
 errdisable recovery cause loopback
 errdisable recovery interval 30
-username @username privilege 15 secret 0  @secrete 
+diagnostic bootup level minimal
+!
+spanning-tree mode rapid-pvst
+spanning-tree loopguard default
+spanning-tree portfast bpduguard default
+spanning-tree extend system-id
+spanning-tree uplinkfast
+no spanning-tree vlan 31,314-321,325,360-361,501-504,777-778,799,992-999
+hw-switch switch 1 logging onboard message level 3
 !
 redundancy
  mode sso
 !
-!
-!
-!
-!
-transceiver type all
- monitoring
-hw-switch switch 1 logging onboard message
-vlan group PRCWIRELESS vlan-list 315-319
-vlan group PRCDEVICED vlan-list 310-312
-vlan group PRCVOICE vlan-list 305-309
 vlan group PRCUSERS vlan-list 300-304
+vlan group PRCVOICE vlan-list 305-309
+vlan group PRCDEVICED vlan-list 310-312
+vlan group PRCWIRELESS vlan-list 315-319
 !
 vlan 2
  name ASA-VPN
@@ -252,7 +186,7 @@ vlan 5
 !
 vlan 6
  name ASA-CCIE-LABS
-!
+!         
 vlan 7
  name ASA-PGC
 !
@@ -268,7 +202,7 @@ vlan 11
  name ASA-BAYTECH
 !
 vlan 12-13 
-!         
+!
 vlan 14
  name ASA-PTSG
 !
@@ -297,13 +231,13 @@ vlan 50
 !
 vlan 51
  name PGC_INT
-!         
+!
 vlan 68
  name Heart-Beat-SQLVRT
 !
 vlan 69
  name Heart-Beat-SQLCLST
-!
+!         
 vlan 70
  name vserver-cluster-heartbeat
 !
@@ -354,8 +288,8 @@ vlan 107
 !
 vlan 108
  name ATI-Cluster
-!
-vlan 109  
+!         
+vlan 109
  name RV-Resort
 !
 vlan 110
@@ -384,7 +318,7 @@ vlan 117
 !
 vlan 118
  name IT-Department
-!         
+!
 vlan 119
  name Network-Operations
 !
@@ -405,7 +339,7 @@ vlan 125
 !
 vlan 126
  name VMOTION-VDI
-!
+!         
 vlan 130
  name Cisco-Wireless-Mgmt
 !
@@ -442,7 +376,7 @@ vlan 142
 vlan 143
  name UCS-KVM-MGMT
 !
-vlan 145  
+vlan 145
  name ASA-PTG
 !
 vlan 150
@@ -456,7 +390,7 @@ vlan 152
 !
 vlan 153
  name PCI-Internet
-!
+!         
 vlan 154
  name PCI-Workstations
 !
@@ -471,7 +405,7 @@ vlan 162
 !
 vlan 164
  name SAN-MANAGEMENT
-!         
+!
 vlan 165
  name Johnson_Controls
 !
@@ -507,7 +441,7 @@ vlan 176
 !
 vlan 177
  name ENDURA_NVR3
-!
+!         
 vlan 178 
 !
 vlan 180
@@ -587,7 +521,7 @@ vlan 305
 !
 vlan 306
  name PRC-VOICE306
-!         
+!
 vlan 307
  name PRC-VOICE307
 !
@@ -609,7 +543,7 @@ vlan 312
 vlan 313
  name PRC-DEVICER313
 !
-vlan 314
+vlan 314  
  name PRC-DEVICER314
 !
 vlan 315
@@ -674,7 +608,7 @@ vlan 994
 vlan 995
  name SENDIO-HEARTBEAT
 !
-vlan 996  
+vlan 996
  name MAIL-CCR-HEARTBEAT
 !
 vlan 997
@@ -687,44 +621,8 @@ vlan 999
  name OASIS-CSM-HEARTBEAT
 !
 !
-class-map match-any system-cpp-police-topology-control
-  description Topology control
-class-map match-any system-cpp-police-sw-forward
-  description Sw forwarding, L2 LVX data, LOGGING
-class-map match-any system-cpp-default
-  description EWLC control, EWLC data, Inter FED 
-class-map match-any system-cpp-police-sys-data
-  description Learning cache ovfl, High Rate App, Exception, EGR Exception, NFL SAMPLED DATA, 
-RPF Failed
-class-map match-any system-cpp-police-punt-webauth
-  description Punt Webauth
-class-map match-any system-cpp-police-l2lvx-control
-  description L2 LVX control packets
-class-map match-any system-cpp-police-forus
-  description Forus Address resolution and Forus traffic
-class-map match-any system-cpp-police-multicast-end-station
-  description MCAST END STATION
-class-map match-any system-cpp-police-multicast
-  description Transit Traffic and MCAST Data
-class-map match-any system-cpp-police-l2-control
-  description L2 control
-class-map match-any system-cpp-police-dot1x-auth
-  description DOT1X Auth
-class-map match-any system-cpp-police-data
-  description ICMP redirect, ICMP_GEN and BROADCAST
-class-map match-any system-cpp-police-stackwise-virt-control
-  description Stackwise Virtual
 class-map match-any non-client-nrt-class
-class-map match-any system-cpp-police-routing-control
-  description Routing control and Low Latency
-class-map match-any system-cpp-police-protocol-snooping
-  description Protocol snooping
-class-map match-any system-cpp-police-dhcp-snooping
-  description DHCP snooping
-class-map match-any system-cpp-police-system-critical
-  description System Critical and Gold Pkt
 !
-policy-map system-cpp-policy
 policy-map port_child_policy
  class non-client-nrt-class
   bandwidth remaining ratio 10
@@ -732,12 +630,62 @@ policy-map port_child_policy
 ! 
 !
 !
-!         
 !
 !
 !
 !
 !
+!
+!
+!
+macro name deploy
+
+snmp-server user snmpv3user snmpv3group v3 auth sha Ojaey7nounohja2 priv aes 128 hah8Ieviewi7na3
+
+crypto key gen rsa gen mod 2048
+
+ip ssh version 2
+username prcdeploy privilege 15 password MiiyuMiiyu321
+
+end
+
+wr
+@
+macro name neat-uplink-config
+ description neat-uplink-config
+ switchport mode access
+ ip arp inspection trust
+ authentication order dot1x
+ authentication priority dot1x
+ authentication port-control auto
+ authentication violation restrict
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ spanning-tree portfast trunk
+ ip dhcp snooping trust
+@
+macro name ise-port-config
+ description ise-port-config
+ switchport host
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication event fail action next-method
+ authentication host-mode multi-auth
+ authentication violation restrict
+ no authentication open
+ mab
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ ip access-group ACL-ALLOW in
+ ip arp inspection limit rate 1000
+ authentication port-control auto
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+@
+!
+macro global description deploy
 !
 interface Port-channel1
  description link to CORE-VPC
@@ -748,12 +696,12 @@ interface Port-channel1
 interface GigabitEthernet0/0
  vrf forwarding Mgmt-vrf
  no ip address
- shutdown
+ shutdown 
  negotiation auto
 !
 interface GigabitEthernet1/0/1
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -773,13 +721,13 @@ interface GigabitEthernet1/0/1
 !
 interface GigabitEthernet1/0/2
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
  authentication host-mode multi-auth
  authentication order mab dot1x
- authentication priority mab dot1x
+ authentication priority dot1x mab
  authentication port-control auto
  authentication violation restrict
  mab
@@ -790,10 +738,10 @@ interface GigabitEthernet1/0/2
  storm-control unicast level 90.00
  storm-control action trap
  spanning-tree portfast
-!         
+!
 interface GigabitEthernet1/0/3
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -813,7 +761,7 @@ interface GigabitEthernet1/0/3
 !
 interface GigabitEthernet1/0/4
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -833,7 +781,7 @@ interface GigabitEthernet1/0/4
 !
 interface GigabitEthernet1/0/5
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -850,10 +798,10 @@ interface GigabitEthernet1/0/5
  storm-control unicast level 90.00
  storm-control action trap
  spanning-tree portfast
-!
+!         
 interface GigabitEthernet1/0/6
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -873,7 +821,7 @@ interface GigabitEthernet1/0/6
 !
 interface GigabitEthernet1/0/7
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -893,7 +841,7 @@ interface GigabitEthernet1/0/7
 !
 interface GigabitEthernet1/0/8
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -913,7 +861,7 @@ interface GigabitEthernet1/0/8
 !
 interface GigabitEthernet1/0/9
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -933,7 +881,7 @@ interface GigabitEthernet1/0/9
 !
 interface GigabitEthernet1/0/10
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -953,7 +901,7 @@ interface GigabitEthernet1/0/10
 !
 interface GigabitEthernet1/0/11
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -973,7 +921,7 @@ interface GigabitEthernet1/0/11
 !
 interface GigabitEthernet1/0/12
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -993,7 +941,7 @@ interface GigabitEthernet1/0/12
 !
 interface GigabitEthernet1/0/13
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1012,9 +960,8 @@ interface GigabitEthernet1/0/13
  spanning-tree portfast
 !
 interface GigabitEthernet1/0/14
- switchport access vlan 310
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1034,7 +981,7 @@ interface GigabitEthernet1/0/14
 !
 interface GigabitEthernet1/0/15
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1051,10 +998,10 @@ interface GigabitEthernet1/0/15
  storm-control unicast level 90.00
  storm-control action trap
  spanning-tree portfast
-!         
+!
 interface GigabitEthernet1/0/16
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1074,7 +1021,7 @@ interface GigabitEthernet1/0/16
 !
 interface GigabitEthernet1/0/17
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1094,7 +1041,7 @@ interface GigabitEthernet1/0/17
 !
 interface GigabitEthernet1/0/18
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1114,7 +1061,7 @@ interface GigabitEthernet1/0/18
 !
 interface GigabitEthernet1/0/19
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1134,7 +1081,7 @@ interface GigabitEthernet1/0/19
 !
 interface GigabitEthernet1/0/20
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1154,7 +1101,7 @@ interface GigabitEthernet1/0/20
 !
 interface GigabitEthernet1/0/21
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1174,7 +1121,7 @@ interface GigabitEthernet1/0/21
 !
 interface GigabitEthernet1/0/22
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1194,7 +1141,7 @@ interface GigabitEthernet1/0/22
 !
 interface GigabitEthernet1/0/23
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1214,7 +1161,7 @@ interface GigabitEthernet1/0/23
 !
 interface GigabitEthernet1/0/24
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1234,7 +1181,7 @@ interface GigabitEthernet1/0/24
 !
 interface GigabitEthernet1/0/25
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1254,7 +1201,7 @@ interface GigabitEthernet1/0/25
 !
 interface GigabitEthernet1/0/26
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1274,7 +1221,7 @@ interface GigabitEthernet1/0/26
 !
 interface GigabitEthernet1/0/27
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1283,7 +1230,7 @@ interface GigabitEthernet1/0/27
  authentication priority dot1x mab
  authentication port-control auto
  authentication violation restrict
- mab      
+ mab
  dot1x pae authenticator
  dot1x timeout tx-period 10
  storm-control broadcast level 20.00
@@ -1294,7 +1241,7 @@ interface GigabitEthernet1/0/27
 !
 interface GigabitEthernet1/0/28
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1314,7 +1261,7 @@ interface GigabitEthernet1/0/28
 !
 interface GigabitEthernet1/0/29
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1334,7 +1281,7 @@ interface GigabitEthernet1/0/29
 !
 interface GigabitEthernet1/0/30
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1354,7 +1301,7 @@ interface GigabitEthernet1/0/30
 !
 interface GigabitEthernet1/0/31
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1374,7 +1321,7 @@ interface GigabitEthernet1/0/31
 !
 interface GigabitEthernet1/0/32
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1394,7 +1341,7 @@ interface GigabitEthernet1/0/32
 !
 interface GigabitEthernet1/0/33
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1414,9 +1361,10 @@ interface GigabitEthernet1/0/33
 !
 interface GigabitEthernet1/0/34
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
+ shutdown
  authentication event fail action next-method
  authentication host-mode multi-auth
  authentication order mab dot1x
@@ -1434,7 +1382,7 @@ interface GigabitEthernet1/0/34
 !
 interface GigabitEthernet1/0/35
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1453,8 +1401,9 @@ interface GigabitEthernet1/0/35
  spanning-tree portfast
 !
 interface GigabitEthernet1/0/36
+ description ise-port-config
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1470,11 +1419,13 @@ interface GigabitEthernet1/0/36
  storm-control multicast level 80.00
  storm-control unicast level 90.00
  storm-control action trap
+ macro description ise-port-config
  spanning-tree portfast
 !
 interface TenGigabitEthernet1/0/37
+ description ise-port-config
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1490,11 +1441,12 @@ interface TenGigabitEthernet1/0/37
  storm-control multicast level 80.00
  storm-control unicast level 90.00
  storm-control action trap
+ macro description ise-port-config
  spanning-tree portfast
 !
 interface TenGigabitEthernet1/0/38
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1514,7 +1466,7 @@ interface TenGigabitEthernet1/0/38
 !
 interface TenGigabitEthernet1/0/39
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1534,7 +1486,7 @@ interface TenGigabitEthernet1/0/39
 !
 interface TenGigabitEthernet1/0/40
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1554,7 +1506,7 @@ interface TenGigabitEthernet1/0/40
 !
 interface TenGigabitEthernet1/0/41
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1574,7 +1526,7 @@ interface TenGigabitEthernet1/0/41
 !
 interface TenGigabitEthernet1/0/42
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1594,27 +1546,7 @@ interface TenGigabitEthernet1/0/42
 !
 interface TenGigabitEthernet1/0/43
  switchport mode access
- ip flow monitor mon-solar input
- ip arp inspection limit rate 1000
- ip access-group ACL-ALLOW in
- authentication event fail action next-method
- authentication host-mode multi-auth
- authentication order mab dot1x
- authentication priority dot1x mab
- authentication port-control auto
- authentication violation restrict
- mab
- dot1x pae authenticator
- dot1x timeout tx-period 10
- storm-control broadcast level 20.00
- storm-control multicast level 80.00
- storm-control unicast level 90.00
- storm-control action trap
- spanning-tree portfast
-!
-interface TenGigabitEthernet1/0/44
- switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1632,9 +1564,29 @@ interface TenGigabitEthernet1/0/44
  storm-control action trap
  spanning-tree portfast
 !         
+interface TenGigabitEthernet1/0/44
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ spanning-tree portfast
+!
 interface TenGigabitEthernet1/0/45
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1654,7 +1606,7 @@ interface TenGigabitEthernet1/0/45
 !
 interface TenGigabitEthernet1/0/46
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1674,7 +1626,7 @@ interface TenGigabitEthernet1/0/46
 !
 interface TenGigabitEthernet1/0/47
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1694,7 +1646,7 @@ interface TenGigabitEthernet1/0/47
 !
 interface TenGigabitEthernet1/0/48
  switchport mode access
- ip flow monitor mon-solar input
+ ip flow monitor SOLAR_WINDS_MONITOR input
  ip arp inspection limit rate 1000
  ip access-group ACL-ALLOW in
  authentication event fail action next-method
@@ -1713,6 +1665,11 @@ interface TenGigabitEthernet1/0/48
  spanning-tree portfast
 !
 interface GigabitEthernet1/1/1
+ description link to CORE-VPC
+ switchport mode trunk
+ ip arp inspection trust
+ channel-group 1 mode active
+ ip dhcp snooping trust
 !
 interface GigabitEthernet1/1/2
 !
@@ -1735,9 +1692,17 @@ interface TenGigabitEthernet1/1/2
  ip dhcp snooping trust
 !
 interface TenGigabitEthernet1/1/3
- switchport access vlan 112
+ description neat-uplink-config
  switchport mode access
  ip arp inspection trust
+ authentication order dot1x
+ authentication priority dot1x
+ authentication port-control auto
+ authentication violation restrict
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ macro description neat-uplink-config
+ spanning-tree portfast trunk
  ip dhcp snooping trust
 !
 interface TenGigabitEthernet1/1/4
@@ -1771,7 +1736,7 @@ interface Vlan1
  shutdown
 !
 interface Vlan110
- ip address 192.168.0.7 255.255.0.0
+ ip address {{mgmt_ip}} 255.255.0.0
  ip helper-address 10.0.2.10
  no ip redirects
  no ip proxy-arp
@@ -1790,64 +1755,63 @@ ip ssh version 2
 ip scp server enable
 !
 ip access-list extended AutoQos-4.0-wlan-Acl-Bulk-Data
- 10 permit tcp any any eq 22
- 20 permit tcp any any eq 465
- 30 permit tcp any any eq 143
- 40 permit tcp any any eq 993
- 50 permit tcp any any eq 995
- 60 permit tcp any any eq 1914
- 70 permit tcp any any eq ftp
- 80 permit tcp any any eq ftp-data
- 90 permit tcp any any eq smtp
- 100 permit tcp any any eq pop3
+ permit tcp any any eq 22
+ permit tcp any any eq 465
+ permit tcp any any eq 143
+ permit tcp any any eq 993
+ permit tcp any any eq 995
+ permit tcp any any eq 1914
+ permit tcp any any eq ftp
+ permit tcp any any eq ftp-data
+ permit tcp any any eq smtp
+ permit tcp any any eq pop3
 ip access-list extended AutoQos-4.0-wlan-Acl-MultiEnhanced-Conf
- 10 permit udp any any range 16384 32767
- 20 permit tcp any any range 50000 59999
+ permit udp any any range 16384 32767
+ permit tcp any any range 50000 59999
 ip access-list extended AutoQos-4.0-wlan-Acl-Scavanger
- 10 permit tcp any any range 2300 2400
- 20 permit udp any any range 2300 2400
- 30 permit tcp any any range 6881 6999
- 40 permit tcp any any range 28800 29100
- 50 permit tcp any any eq 1214
- 60 permit udp any any eq 1214
- 70 permit tcp any any eq 3689
- 80 permit udp any any eq 3689
- 90 permit tcp any any eq 11999
+ permit tcp any any range 2300 2400
+ permit udp any any range 2300 2400
+ permit tcp any any range 6881 6999
+ permit tcp any any range 28800 29100
+ permit tcp any any eq 1214
+ permit udp any any eq 1214
+ permit tcp any any eq 3689
+ permit udp any any eq 3689
+ permit tcp any any eq 11999
 ip access-list extended AutoQos-4.0-wlan-Acl-Signaling
- 10 permit tcp any any range 2000 2002
- 20 permit tcp any any range 5060 5061
- 30 permit udp any any range 5060 5061
+ permit tcp any any range 2000 2002
+ permit tcp any any range 5060 5061
+ permit udp any any range 5060 5061
 ip access-list extended AutoQos-4.0-wlan-Acl-Transactional-Data
- 10 permit tcp any any eq 443
- 20 permit tcp any any eq 1521
- 30 permit udp any any eq 1521
- 40 permit tcp any any eq 1526
- 50 permit udp any any eq 1526
- 60 permit tcp any any eq 1575
- 70 permit udp any any eq 1575
- 80 permit tcp any any eq 1630
- 90 permit udp any any eq 1630
- 100 permit tcp any any eq 1527
- 110 permit tcp any any eq 6200
- 120 permit tcp any any eq 3389
- 130 permit tcp any any eq 5985
- 140 permit tcp any any eq 8080
+ permit tcp any any eq 443
+ permit tcp any any eq 1521
+ permit udp any any eq 1521
+ permit tcp any any eq 1526
+ permit udp any any eq 1526
+ permit tcp any any eq 1575
+ permit udp any any eq 1575
+ permit tcp any any eq 1630
+ permit udp any any eq 1630
+ permit tcp any any eq 1527
+ permit tcp any any eq 6200
+ permit tcp any any eq 3389
+ permit tcp any any eq 5985
+ permit tcp any any eq 8080
 !
 ip radius source-interface Vlan110 
 logging history informational
 logging host 10.19.2.200
-ip access-list standard 1
- 10 permit 10.19.0.0 0.0.255.255
- 20 deny   any log
+access-list 1 permit 10.19.0.0 0.0.255.255
+access-list 1 deny   any log
 !
-!
+snmp-server group snmpv3group v3 priv read snmpv3view write snmpv3view 
+snmp-server view snmpv3view internet included
 snmp-server community H1QY23L5674]hI3 RO
 snmp-server trap-source Vlan110
 snmp-server source-interface informs Vlan110
 snmp-server enable traps mac-notification change move threshold
 snmp-server host 10.19.2.200 version 2c H1QY23L5674]hI3  mac-notification
 tacacs-server directed-request
-!
 radius-server attribute 6 on-for-login-auth
 radius-server attribute 8 include-in-access-req
 radius-server attribute 25 access-request include
@@ -1855,12 +1819,11 @@ radius-server dead-criteria time 5 tries 3
 !
 radius server ISE
  address ipv4 10.1.2.10 auth-port 1812 acct-port 1813
- key 0 secret7
+ key 0 {{radius_password}}
 !
 !
-control-plane
- service-policy input system-cpp-policy
 !
+no vstack
 banner login ^CC **********************************************************************
 NOTICE:
 This computer system is the private property of its owner, whether
@@ -1913,4 +1876,31 @@ line vty 5 15
 ntp source Vlan110
 ntp server 10.10.1.16
 ntp server 10.10.1.15 prefer
+wsma agent exec
+ profile httplistener
+ profile httpslistener
 !
+wsma agent config
+ profile httplistener
+ profile httpslistener
+!
+wsma agent filesys
+ profile httplistener
+ profile httpslistener
+!
+wsma agent notify
+ profile httplistener
+ profile httpslistener
+!
+!
+wsma profile listener httplistener
+ transport http
+!
+wsma profile listener httpslistener
+ transport https
+!
+!
+pnp profile pnp-zero-touch
+ transport https ipv4 10.1.6.28 port 443
+ap group default-group
+end
