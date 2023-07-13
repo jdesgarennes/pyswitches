@@ -41,12 +41,12 @@ class SwitchConfig(QWidget):
         self.mgmt_ip_entry = QLineEdit()
         layout.addWidget(self.mgmt_ip_entry)
 
-        passphrase_label = QLabel("Passphrase:")
+        passphrase_label = QLabel("Local-Passphrase:")
         layout.addWidget(passphrase_label)
         self.passphrase_entry = QLineEdit()
         layout.addWidget(self.passphrase_entry)
 
-        tacsecrete_label = QLabel("Tacsecrete:")
+        tacsecrete_label = QLabel("Tac-secrete:")
         layout.addWidget(tacsecrete_label)
         self.tacsecrete_entry = QLineEdit()
         layout.addWidget(self.tacsecrete_entry)
