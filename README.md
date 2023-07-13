@@ -11,7 +11,7 @@ A test project to create network based switch configs.
   
   ## Description: This Project is a python based app that uses pyqt5 for a GUI and is used for creating network based switch configs, in an interactive way.
 
-  ## Usage:  To use the app, the user must have the template they desire for the switch the use in the templates folder, the user then executes the pyswitch.py and a gui will load. The user will select the template fill in the blanks and hit generate. User must hit generate first before clicking save config. When the user click save config, they are presented with where to save the output file.
+  ## Usage:  To use the app, the user must have the template they desire for the switch model they use, in the templates folder, the user then executes the pyswitch.py and a GUI will load. The user will select the template fill in the blanks and hit generate. User must hit generate first before clicking save config. When the user clicks save the config button, they are presented with where to save the output file.
 
   ## Questions: johndesgarennes@gmail.com
 
