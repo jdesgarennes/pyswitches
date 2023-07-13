@@ -1,12 +1,11 @@
 Hostname,Management IP,Passphrase,Tacsecrete
-Switch1,192.168.0.1,pass1,secret1
-Switch2,192.168.0.2,pass2,secret2
-Switch3,192.168.0.3,pass3,secret3
-Switch4,192.168.0.4,pass4,secret4
-Switch5,192.168.0.5,pass5,secret5
-Switch6,192.168.0.6,pass6,secret6
-Switch7,192.168.0.7,pass7,secret7
-Switch8,192.168.0.8,pass8,secret8
-Switch9,192.168.0.9,pass9,secret9
-Switch10,192.168.0.10,pass10,secret10
-
+IDF1-1,192.168.0.1,pass1,secret1
+IDF1-2,192.168.0.2,pass2,secret2
+IDF1-3,192.168.0.3,pass3,secret3
+IDF1-4,192.168.0.4,pass4,secret4
+IDF1-5,192.168.0.5,pass5,secret5
+IDF1-6,192.168.0.6,pass6,secret6
+IDF1-7,192.168.0.7,pass7,secret7
+IDF1-8,192.168.0.8,pass8,secret8
+IDF1-9,192.168.0.9,pass9,secret9
+IDF1-10,192.168.0.10,pass10,secret10

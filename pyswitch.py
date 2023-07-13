@@ -1,7 +1,7 @@
 import sys
 import csv
 import os
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel, QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel, QFileDialog, QMessageBox, QComboBox
 
 class SwitchConfig(QWidget):
     def __init__(self):
@@ -13,6 +13,13 @@ class SwitchConfig(QWidget):
 
         label = QLabel("Switch Config Generator")
         layout.addWidget(label)
+
+        template_label = QLabel("Select Template:")
+        layout.addWidget(template_label)
+        self.template_combo = QComboBox()
+        self.template_combo.addItem("Template 1")
+        self.template_combo.addItem("Template 2")
+        layout.addWidget(self.template_combo)
 
         hostname_label = QLabel("Hostname:")
         layout.addWidget(hostname_label)
@@ -44,26 +51,21 @@ class SwitchConfig(QWidget):
 
         self.setLayout(layout)
 
-        self.show()  # Show the window
-
     def generate_config(self):
+        template = self.template_combo.currentText()
         hostname = self.hostname_entry.text()
         mgmt_ip = self.mgmt_ip_entry.text()
         passphrase = self.passphrase_entry.text()
         tacsecrete = self.tacsecrete_entry.text()
 
-        # Read the template file
-        with open('./templates/template.txt', 'r') as template_file:
-            template = template_file.read()
-
-        # Replace the variables in the template with the provided values
-        config = template.replace('{{hostname}}', hostname)
-        config = config.replace('{{mgmt_ip}}', mgmt_ip)
-        config = config.replace('{{passphrase}}', passphrase)
-        config = config.replace('{{tacsecrete}}', tacsecrete)
+        # Generate configuration using the selected template and provided parameters
+        config = self.generate_template(template, hostname, mgmt_ip, passphrase, tacsecrete)
 
         # Save the configuration to a file
-        self.save_to_file(config, hostname)
+        file_path = self.save_to_file(config, hostname)
+
+        # Display completion message and file path in a popup window
+        QMessageBox.information(self, "Single Config Generation Complete", f"Configuration saved to: {file_path}")
 
     def batch_mode(self):
         # Open a file dialog to select the CSV file
@@ -75,25 +77,35 @@ class SwitchConfig(QWidget):
             with open(csv_path, 'r') as csv_file:
                 csv_reader = csv.DictReader(csv_file)
                 for row in csv_reader:
+                    template = self.template_combo.currentText()
                     hostname = row['Hostname']
                     mgmt_ip = row['Management IP']
                     passphrase = row['Passphrase']
                     tacsecrete = row['Tacsecrete']
 
-                    # Read the template file
-                    with open('./templates/template.txt', 'r') as template_file:
-                        template = template_file.read()
-
-                    # Replace the variables in the template with the provided values
-                    config = template.replace('{{hostname}}', hostname)
-                    config = config.replace('{{mgmt_ip}}', mgmt_ip)
-                    config = config.replace('{{passphrase}}', passphrase)
-                    config = config.replace('{{tacsecrete}}', tacsecrete)
+                    # Generate configuration using the selected template and provided parameters
+                    config = self.generate_template(template, hostname, mgmt_ip, passphrase, tacsecrete)
 
                     # Save the configuration to a file
                     self.save_to_file(config, hostname)
 
             QMessageBox.information(self, "Batch Mode", "Batch configuration generation completed.")
+
+    def generate_template(self, template, hostname, mgmt_ip, passphrase, tacsecrete):
+        # Read the template file and replace placeholders with provided parameters
+        template_dir = "templates"
+        template_file = f"{template.lower().replace(' ', '_')}.txt"
+        template_path = os.path.join(template_dir, template_file)
+
+        with open(template_path, 'r') as file:
+            template_content = file.read()
+
+        config = template_content.replace("{{hostname}}", hostname)
+        config = config.replace("{{mgmt_ip}}", mgmt_ip)
+        config = config.replace("{{passphrase}}", passphrase)
+        config = config.replace("{{tacsecrete}}", tacsecrete)
+
+        return config
 
     def save_to_file(self, config, hostname):
         output_dir = "output"
@@ -105,9 +117,10 @@ class SwitchConfig(QWidget):
         with open(file_path, 'w') as file:
             file.write(config)
 
-        print(f'Configuration saved to: {file_path}')
+        return file_path
 
 if __name__ == '__main__':
     app = QApplication([])
     window = SwitchConfig()
+    window.show()
     app.exec_()
