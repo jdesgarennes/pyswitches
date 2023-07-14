@@ -4,10 +4,13 @@ import os
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLineEdit, QLabel, QFileDialog, QMessageBox, QComboBox
 from PyQt5.QtGui import QIcon, QPixmap, QFont
 from PyQt5.QtCore import Qt
+import urllib3
+from pyinfoblox import InfobloxWAPI
 
 class SwitchConfig(QWidget):
     def __init__(self):
         super().__init__()
+        self.network_function = None  
 
         self.setWindowTitle("Switch Config Generator")
         self.setGeometry(100, 100, 800, 600)  # Set window size and position
@@ -62,12 +65,16 @@ class SwitchConfig(QWidget):
         self.radius_password_entry = QLineEdit()
         layout.addWidget(self.radius_password_entry)
 
+        next_ip_button = QPushButton("Get Next Available IP")
+        next_ip_button.clicked.connect(self.get_next_available_ip)
+        layout.addWidget(next_ip_button)
+
         button = QPushButton("Generate Single Config")
         button.clicked.connect(self.generate_config)
         layout.addWidget(button)
 
-        batch_button = QPushButton("Batch Mode")
-        batch_button.clicked.connect(self.batch_mode)
+        batch_button = QPushButton("Generate Batch Config")
+        batch_button.clicked.connect(self.generate_batch_config)
         layout.addWidget(batch_button)
 
         self.setLayout(layout)
@@ -89,62 +96,90 @@ class SwitchConfig(QWidget):
         # Display completion message and file path in a popup window
         QMessageBox.information(self, "Single Config Generation Complete", f"Configuration saved to: {file_path}")
 
-    def batch_mode(self):
-        # Open a file dialog to select the CSV file
+    def get_next_available_ip(self):
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+        infoblox = InfobloxWAPI(
+            username='jdesgarennes.admin',
+            password='Man bear pig lives!!!',
+            wapi='https://10.0.20.13/wapi/v1.1/'
+        )
+
+        network_function = infoblox.network.function(
+            objref='network/ZG5zLm5ldHdvcmskMTAuMTAuMC4wLzE2LzA:10.10.0.0/16/default',
+            _function='next_available_ip',
+            num=1
+        )
+
+        print(network_function)  # For debugging
+
+        next_ip = network_function['ips'][0]  # Modification here
+
+        # Display the next available IP in a popup
+        QMessageBox.information(self, "Next Available IP", f"The next available IP is: {next_ip}", buttons=QMessageBox.Ok, defaultButton=QMessageBox.Ok)
+
+    def generate_batch_config(self):
+        # Get the selected template for batch generation
+        template = self.template_combo.currentText()
+
+        # Prompt user to select the CSV file
         file_dialog = QFileDialog()
-        csv_path, _ = file_dialog.getOpenFileName(self, 'Select CSV File', '', 'CSV Files (*.csv)')
+        file_dialog.setFileMode(QFileDialog.ExistingFile)
+        file_dialog.setNameFilter("CSV Files (*.csv)")
+        file_path, _ = file_dialog.getOpenFileName(self, "Select CSV File", "", "CSV Files (*.csv)")
 
-        if csv_path:
-            # Read the CSV file and generate configurations
-            with open(csv_path, 'r') as csv_file:
-                csv_reader = csv.DictReader(csv_file)
+        if file_path:
+            output_dir = "output"
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+
+            with open(file_path, 'r') as file:
+                csv_reader = csv.reader(file)
+                next(csv_reader)  # Skip header row
+
                 for row in csv_reader:
-                    template = self.template_combo.currentText()
-                    hostname = row['Hostname']
-                    mgmt_ip = row['Management IP']
-                    passphrase = row['Passphrase']
-                    tacsecrete = row['Tacsecrete']
-                    radius_password = row['Radius Password']
+                    hostname, mgmt_ip = row[0], row[1]
 
-                    # Generate configuration using the selected template and provided parameters
-                    config = self.generate_template(template, hostname, mgmt_ip, passphrase, tacsecrete, radius_password)
+                    config = self.generate_template(template, hostname, mgmt_ip, "", "", "")
 
-                    # Save the configuration to a file
-                    self.save_to_file(config, hostname)
+                    file_name = f"{hostname}.txt"
+                    file_path = os.path.join(output_dir, file_name)
+                    with open(file_path, 'w') as output_file:
+                        output_file.write(config)
 
-            QMessageBox.information(self, "Batch Mode", "Batch configuration generation completed.")
+            QMessageBox.information(
+                self, "Batch Config Generation Complete", "Batch configurations generated successfully.", buttons=QMessageBox.Ok, defaultButton=QMessageBox.Ok
+            )
+        else:
+            QMessageBox.warning(
+                self, "Error", "No CSV file selected.", buttons=QMessageBox.Ok, defaultButton=QMessageBox.Ok
+            )
 
     def generate_template(self, template, hostname, mgmt_ip, passphrase, tacsecrete, radius_password):
         # Read the template file and replace placeholders with provided parameters
         template_dir = "templates"
-        template_file = f"{template.lower().replace(' ', '_')}.txt"
-        template_path = os.path.join(template_dir, template_file)
-
-        with open(template_path, 'r') as file:
+        template_file = f"{template_dir}/{template}.txt"
+        with open(template_file, 'r') as file:
             template_content = file.read()
-
-        config = template_content.replace("{{hostname}}", hostname)
-        config = config.replace("{{mgmt_ip}}", mgmt_ip)
-        config = config.replace("{{passphrase}}", passphrase)
-        config = config.replace("{{tacsecrete}}", tacsecrete)
-        config = config.replace("{{radius_password}}", radius_password)
-
-        return config
+            template_content = template_content.replace("$HOSTNAME", hostname)
+            template_content = template_content.replace("$MGMT_IP", mgmt_ip)
+            template_content = template_content.replace("$PASSPHRASE", passphrase)
+            template_content = template_content.replace("$TACSECRET", tacsecrete)
+            template_content = template_content.replace("$RADIUS_PASSWORD", radius_password)
+        return template_content
 
     def save_to_file(self, config, hostname):
         output_dir = "output"
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-
-        file_path = os.path.join(output_dir, f"{hostname}.txt")
-
+        file_name = f"{hostname}.txt"
+        file_path = os.path.join(output_dir, file_name)
         with open(file_path, 'w') as file:
             file.write(config)
-
         return file_path
 
-if __name__ == '__main__':
-    app = QApplication([])
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
     window = SwitchConfig()
     window.show()
-    app.exec_()
+    sys.exit(app.exec_())
