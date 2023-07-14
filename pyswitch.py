@@ -101,7 +101,7 @@ class SwitchConfig(QWidget):
 
         infoblox = InfobloxWAPI(
             username='jdesgarennes.admin',
-            password='Man bear pig lives!!!',
+            password='XXXXXXXXXXXXXX',
             wapi='https://10.0.20.13/wapi/v1.1/'
         )
 
