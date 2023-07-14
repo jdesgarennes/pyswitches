@@ -100,8 +100,8 @@ class SwitchConfig(QWidget):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         infoblox = InfobloxWAPI(
-            username='jdesgarennes.admin',
-            password='XXXXXXXXXXXXXX',
+            username='XXXXXXXXXXX',
+            password='XXXXXXXXXXX',
             wapi='https://10.0.20.13/wapi/v1.1/'
         )
 
@@ -112,8 +112,11 @@ class SwitchConfig(QWidget):
         )
 
         print(network_function)  # For debugging
+       
 
         next_ip = network_function['ips'][0]  # Modification here
+
+        self.mgmt_ip_entry.setText(next_ip)
 
         # Display the next available IP in a popup
         QMessageBox.information(self, "Next Available IP", f"The next available IP is: {next_ip}", buttons=QMessageBox.Ok, defaultButton=QMessageBox.Ok)
