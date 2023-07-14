@@ -5,7 +5,7 @@ A test project to create network based switch configs.
 
   # Title: Pyswitch configurator
 
-  ![Text-Editor](./images/configurators.jpg)
+  ![Text-Editor](./images/configurator.jpg)
   
   # This is a work in progress!
   
