@@ -1,0 +1,347 @@
+no service pad
+service tcp-keepalives-in
+service tcp-keepalives-out
+service timestamps debug datetime msec localtime show-timezone year
+service timestamps log datetime msec localtime show-timezone year
+service password-encryption
+service compress-config
+service sequence-numbers
+no platform punt-keepalive disable-kernel-core
+!
+hostname  {{hostname}}
+!
+logging file flash:logging.txt 5000000 informational
+logging count
+logging buffered informational
+logging console informational
+logging monitor informational
+enable secret  {{passphrase}}
+!
+aaa new-model
+!
+aaa group server tacacs+ MANAGE
+ server-private 10.1.2.10 key {{tacsecrete}}
+ ip tacacs source-interface Vlan151
+!
+aaa group server radius ise-radius
+ server-private 10.1.2.10 auth-port 1812 acct-port 1813 key {{radius_password}}
+ ip radius source-interface Vlan151
+!
+aaa authentication login default group MANAGE local
+aaa authentication login NOAUTH none
+aaa authentication dot1x default group ise-radius
+aaa authorization console
+aaa authorization exec default group MANAGE local
+aaa authorization network default group ise-radius
+aaa accounting dot1x default start-stop group ise-radius
+aaa accounting exec default start-stop group MANAGE
+aaa accounting commands 15 default start-stop group MANAGE
+!
+aaa session-id common
+clock timezone PST -8 0
+clock summer-time PST recurring
+!
+!
+no ip dhcp snooping information option
+!
+coap http enable
+!
+no ip source-route
+no ip gratuitous-arps
+!
+no ip domain lookup
+ip domain name pechanga-pgc.com
+!
+ip dhcp snooping vlan 1,7,11-12,14-33,40-42,51-52,156-157
+ip dhcp snooping
+ip arp inspection vlan 1,7,11-12,14-33,40-42,51-52,156-157
+ip arp inspection validate ip allow zeros
+!
+vtp domain pechanga-pgc
+vtp mode transparent
+udld aggressive
+
+cisp enable
+!
+!
+diagnostic bootup level minimal
+!
+spanning-tree mode rapid-pvst
+spanning-tree loopguard default
+spanning-tree portfast bpduguard default
+spanning-tree extend system-id
+spanning-tree uplinkfast
+dot1x system-auth-control
+errdisable recovery cause all
+errdisable recovery interval 30
+!
+username prcadmin privilege 15 secret {{passphrase}}
+!
+redundancy
+ mode sso
+!
+transceiver type all
+ monitoring
+!
+Vlan 1
+!
+vlan 7
+ name Casino-Operations
+!
+vlan 11
+ name CDS-Workstations
+!
+vlan 12
+ name Cisco-Wired-Mgmt
+!
+vlan 14
+ name Network-Operations
+!
+vlan 15
+ name Management console IDRAC
+!
+vlan 16
+ name 
+!
+vlan 17
+ name 
+!
+vlan 18
+ name 
+!
+vlan 19
+ name 
+!
+vlan 20
+ name 
+!
+vlan 21
+ name
+!
+vlan 21
+ name 
+!
+vlan 23
+ name 
+!
+vlan 24
+ name 
+!
+vlan 25
+ name 
+!
+vlan 26
+ name 
+!
+vlan 27
+ name 
+!
+vlan 28
+ name 
+!
+vlan 29
+ name 
+!
+vlan 30
+ name workstations-general
+!
+vlan 31
+ name workstations-commissioners
+!
+vlan 32
+ name workstations-surveillance
+!
+vlan 33
+ name workstations-compliance
+!
+vlan 40
+ name
+!
+vlan 41
+ name 
+!
+vlan 42
+ name 
+!
+vlan 51
+ name WIRELESS
+!
+vlan 52
+ name Surv out
+!
+vlan 100
+ name  BOSCH-ENCODERS
+ !
+vlan 104
+ name ip cameras others
+ !
+vlan 108
+ name ip cameras others
+vlan 151
+ name MANAGE-CISCO
+ !
+vlan 156
+ name 
+!
+vlan 157
+ name 
+ !
+interface Port-channel1
+ description link to CORE-VPC
+ switchport mode trunk
+ ip arp inspection trust
+ ip dhcp snooping trust
+!
+interface GigabitEthernet0/0
+ vrf forwarding Mgmt-vrf
+ no ip address
+ shutdown
+ speed 1000
+ negotiation auto
+!
+Interface range TwoGigabitEthernet1/0/1-36, TenGigabitEthernet1/0/37-48
+description cppm-config
+ switchport mode access
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication violation restrict
+ no authentication open
+ ip arp inspection limit rate 1000
+ mab
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ ip access-group ACL-ALLOW in
+ authentication port-control auto
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+!
+interface range TenGigabitEthernet1/1/1-2
+ switchport mode trunk
+ ip arp inspection trust
+ channel-group 1 mode active
+ ip dhcp snooping trust
+!
+interface range TenGigabitEthernet1/1/3-4
+Shut
+!
+interface range TenGigabitEthernet1/1/5-8
+ shut
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+interface Vlan151
+ ip address {{mgmt_ip}} 255.255.255.0
+ ip helper-address 10.0.2.10
+ no ip redirects
+ no ip proxy-arp
+!
+ip default-gateway 10.42.51.1
+ip forward-protocol nd
+no ip http server
+no ip http secure-server
+!
+ip ssh time-out 60
+ip ssh authentication-retries 2
+ip ssh version 2
+ip scp server enable
+!
+ip radius source-interface Vlan151
+!
+snmp-server community H1QY23L5674]hI3 RO
+snmp-server trap-source Vlan151
+snmp-server source-interface informs Vlan151
+snmp-server enable traps mac-notification change move threshold
+snmp-server host 10.19.2.200 version 2c H1QY23L5674]hI3  mac-notification
+tacacs-server directed-request
+!
+radius-server attribute 6 on-for-login-auth
+radius-server attribute 8 include-in-access-req
+radius-server attribute 25 access-request include
+radius-server dead-criteria time 5 tries 3
+!
+control-plane
+ service-policy input system-cpp-policy
+
+banner motd {
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWNX0Okkkxxxdddddddddddddddddxx0NWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWX0kdc:;'..........................'oXWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWX0koc;'.................................'xWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWX0kdc;'.......................................cXWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWNKkdc;'...........................................'dXWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWNKkdl;'..............................................'cxXWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWNKOxl:,.................................................'cl:c0WWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWNXX0kolc::::::::::::::::::::cc::::::,......................,oc'.;0WWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWNKkdc:;,,''''..................''',,,;;;:ll,....................co,..:KWWWWWWWWWWWWWWWWWW
+WWWWWWWNXKOxoc::::::::::::::::::::::::::::;,.........co'...................ll..;OWWWWWWWWWWWWWWWWWWW
+WWWWNkooooooooolcloddddddddddddddddddddddolllc'......,o:..................:o:;dKWWWWWWWWWWWWWWWWWWWW
+WWWWXlcxl::;;ox:,;xWWWWWWWWWWWWWWWWWWNNNNXKkllo;......ll...............':lc;oKWWWWWWWWWWWWWWWWWWWWWW
+WWWWWOcll....:o;..oNWWKKKkxxxxxxxkkkkxxxxx0NKlco,.....;o;............'clc'.;0WWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWx:o:...,o:..oNWNold;.....;ccclddl,..;OW0cll'....'oc..........,cl:'.'cOWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWNoco;...ol..lNMWd:dc...,ll,..oXWW0c..dNWkcoc'....co'.......,cl:'.'cONWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWKlco,..co'.lNWWO:oo...ol....c0XKOx;.lXWNdcoo;...,o:.....,ll;..'lONWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWW0cll'.;o:.lNMWXlld'.'ol.....',':d;.;0WWXlcxo,...ll...;ll;..,o0NWWWWWWWWWWWWXOddxxkOKKXNWWWWW
+WWWWWWWWWk:oc.'ol.lNWWNdcd;..;oc'.....;oc..'kWWW0c,ll...:o;;lc;..;lxXWWWWWWWWWWWWWXl.......'cx0NWWWW
+WWWWWWWWWNd:o:.ld,lNWNWO:dl...,cccccccc;....dNWWWk::oc..,xxc,.':lldKWWWWWWWWWWWWWWx'.......;oclKWWWW
+WWWWWWWWWWXdokkK0:oXOlkKl:lc;;;;:cllc:;;;;;:dNKxOXKdcoc:lc,.,clc:dXWWWWWWWWWWWWWMK:.......'ol.:KWWWW
+WWWWWWWWWWWNNWWWNooXX0XWXkxxxxxxxxxxxxxxxxxx0N0dkNWXdxkc:;:cl:''xNWWWWWWWWWWWWWWWO,.......;o;.:KWWWW
+WWWWWWWWWWWWWWWWWKdx0KXXXNNNNNNWWWWWWWWWWWWWWWWWWWWXddkoc::,..'dNMWWWWWWWNNNXXKXKo'';cl;..co'.:KWWWW
+WWWWWWWWWWWWWWWWWWN0kxxxxkkkkkkkkkkkkkkkkkkkkkkkxxxdokOdc::::clxOkxddoollc::::lxl....'ckl'll..:KWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWNNNNNNNXXXXXXXK0dccc:;;;;;,,'';cccc::::::::::cc;.......lkcoc..:KWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWXl............'oo;;,,'''................ckcoc..:KWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWd............;o;......................,do,ll..:KWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWO,...........:o;....'',,,;;::ccclc'..'::'.ll..:KWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWXl,'........'o00OO000KKXXXNNNWWWWXl.......:o,.:KMWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWNK0d:,''';oONWWWWWWWWWWWWWWWWWWWWO;......,o:.:KWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWNK00KXWWWWWWWWWWWWWWWWWWWWWWWNx'......ll.:KWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWN0dl:,'.;oclKWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWNX0kxxOKNWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW}
+{
+
+
+alias exec cc configure terminal
+alias exec sr show running-config
+alias exec siib show ip interface brief | i Vla|Loo|Po
+alias exec sir show ip route
+alias exec cir clear ip route *
+alias exec sis show int status
+alias exec svb show vlan brief
+alias exec ps sh proc cpu sorted | e 0.00%  0.00%  0.00%
+!
+line con 0
+ session-timeout 15
+ exec-timeout 15 0
+ logging synchronous level all limit 5
+ stopbits 1
+line vty 0 15
+ session-timeout 15
+ access-class 1 in
+ exec-timeout 5 0
+ logging synchronous level all limit 5
+ transport input ssh
+
+ntp source Vlan151
+ntp server 10.42.56.10
+ntp server 10.42.56.10 prefer
+!
+mac address-table notification mac-move
+!
+crypto key generate rsa modulus 2048
+!
+end
+!
+wr
+
+end
+
+

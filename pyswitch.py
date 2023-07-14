@@ -33,6 +33,7 @@ class SwitchConfig(QWidget):
         self.template_combo = QComboBox()
         self.template_combo.addItem("C9300-48U-PRC") 
         self.template_combo.addItem("C3850-12X4-PRC")
+        self.template_combo.addItem("C9300_PGC")
         layout.addWidget(self.template_combo)
 
         hostname_label = QLabel("Hostname:")
@@ -164,11 +165,11 @@ class SwitchConfig(QWidget):
         template_file = f"{template_dir}/{template}.txt"
         with open(template_file, 'r') as file:
             template_content = file.read()
-            template_content = template_content.replace("$HOSTNAME", hostname)
-            template_content = template_content.replace("$MGMT_IP", mgmt_ip)
-            template_content = template_content.replace("$PASSPHRASE", passphrase)
-            template_content = template_content.replace("$TACSECRET", tacsecrete)
-            template_content = template_content.replace("$RADIUS_PASSWORD", radius_password)
+            template_content = template_content.replace("{{hostname}}", hostname)
+            template_content = template_content.replace("{{mgmt_ip}}", mgmt_ip)
+            template_content = template_content.replace("{{passphrase}}", passphrase)
+            template_content = template_content.replace("{{tacsecrete}}", tacsecrete)
+            template_content = template_content.replace("{{radius_password}}", radius_password)
         return template_content
 
     def save_to_file(self, config, hostname):
