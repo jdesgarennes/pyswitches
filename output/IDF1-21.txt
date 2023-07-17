@@ -1,0 +1,1695 @@
+
+!
+version 16.6
+no service pad
+service tcp-keepalives-in
+service tcp-keepalives-out
+service timestamps debug datetime msec localtime show-timezone
+service timestamps log datetime msec localtime show-timezone
+service password-encryption
+service compress-config
+service sequence-numbers
+no platform punt-keepalive disable-kernel-core
+!
+hostname IDF1-21
+!
+!
+vrf definition Mgmt-vrf
+ !
+ address-family ipv4
+ exit-address-family
+ !
+ address-family ipv6
+ exit-address-family
+!
+logging file flash:logging.txt 5000000 informational
+logging count
+logging buffered informational
+logging console informational
+logging monitor informational
+enable secret 5 $1$ahHH$fy7oxkbOHKjwOcczGoR38/
+!
+aaa new-model
+!
+!
+aaa group server tacacs+ MANAGE
+ server-private 10.1.2.10 key 0 
+ ip tacacs source-interface Vlan110
+!
+aaa group server radius ise-radius
+ server-private 10.1.2.10 auth-port 1812 acct-port 1813 key 0 
+ ip radius source-interface Vlan110
+!
+aaa authentication login default group MANAGE local
+aaa authentication login NOAUTH none
+aaa authentication dot1x default group ise-radius
+aaa authorization console
+aaa authorization exec default group MANAGE local 
+aaa authorization network default group ise-radius 
+aaa accounting dot1x default start-stop group ise-radius
+aaa accounting exec default start-stop group MANAGE
+aaa accounting commands 15 default start-stop group MANAGE
+!
+!
+!
+!
+!
+aaa server radius dynamic-author
+ client 10.1.3.23 server-key 7 046F030F0A22444F0015513117190901
+ client 10.1.3.24 server-key 7 053F0E06244F4608100943340E1E012F
+ client 10.1.3.25 server-key 7 053F0E06244F4608100943340E1E012F
+ client 10.1.3.26 server-key 7 073B29454B0A11041E1E5F2A01382E21
+ client 10.1.3.27 server-key 7 13311F1B0E0F0C2B22287C1530301602
+!
+aaa session-id common
+clock timezone PST -8 0
+clock summer-time PST recurring
+switch 1 provision c9300-48u
+!
+!
+!
+!
+!
+coap http enable
+!
+no ip source-route
+no ip gratuitous-arps
+!
+no ip domain lookup
+ip domain name pechanga.com
+!
+!
+!
+ip dhcp snooping vlan 1-4094
+ip dhcp snooping
+ip arp inspection vlan 1-1024
+ip arp inspection validate ip allow zeros 
+!
+!
+!
+!
+!
+!
+!
+vtp domain pechanga
+vtp mode transparent
+udld aggressive
+
+cisp enable
+!
+flow record SOLARWINDS_Record
+ match datalink vlan input
+ match datalink mac source address input
+ match datalink mac destination address input
+ match ipv4 tos
+ match ipv4 ttl
+ match ipv4 protocol
+ match ipv4 source address
+ match ipv4 destination address
+ match transport source-port
+ match transport destination-port
+ match interface input
+ collect interface output
+ collect counter bytes long
+ collect counter packets long
+ collect timestamp absolute first
+ collect timestamp absolute last
+!
+!
+flow exporter SOLAR_WINDS
+ description SOLAR_WINDS Flow Exporter
+ destination 10.19.2.200
+ source Vlan110
+ transport udp 2055
+!
+!
+flow monitor SOLAR_WINDS_MONITOR
+ description SOLARWINDS Flow Monitor
+ exporter SOLAR_WINDS
+ cache timeout active 60
+ record SOLARWINDS_Record
+!
+!
+macro name neat-uplink-config
+ description neat-uplink-config
+ switchport mode access
+ ip arp inspection trust
+ authentication order dot1x
+ authentication priority dot1x
+ authentication port-control auto
+ authentication violation restrict
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ spanning-tree portfast trunk
+ ip dhcp snooping trust
+@
+macro name ise-port-config
+ description ise-port-config
+ switchport mode access
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication violation restrict
+ no authentication open
+ ip arp inspection limit rate 1000
+ mab
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ ip access-group ACL-ALLOW in
+ authentication port-control auto
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+@
+!
+diagnostic bootup level minimal
+!
+spanning-tree mode rapid-pvst
+spanning-tree loopguard default
+spanning-tree portfast bpduguard default
+spanning-tree extend system-id
+spanning-tree uplinkfast
+dot1x system-auth-control
+errdisable recovery cause udld
+errdisable recovery cause bpduguard
+errdisable recovery cause security-violation
+errdisable recovery cause channel-misconfig
+errdisable recovery cause pagp-flap
+errdisable recovery cause dtp-flap
+errdisable recovery cause link-flap
+errdisable recovery cause sfp-config-mismatch
+errdisable recovery cause gbic-invalid
+errdisable recovery cause psecure-violation
+errdisable recovery cause port-mode-failure
+errdisable recovery cause dhcp-rate-limit
+errdisable recovery cause mac-limit
+errdisable recovery cause vmps
+errdisable recovery cause storm-control
+errdisable recovery cause inline-power
+errdisable recovery cause arp-inspection
+errdisable recovery cause loopback
+errdisable recovery interval 30
+!
+username prcadmin privilege 15 secret 0 
+!
+redundancy
+ mode sso
+!
+!
+transceiver type all
+ monitoring
+vlan group PRCWIRELESS vlan-list 315-319
+vlan group PRCDEVICED vlan-list 310-312
+vlan group PRCVOICE vlan-list 305-309
+vlan group PRCUSERS vlan-list 300-304
+!
+vlan 18 
+!
+vlan 102
+ name Casino-Operations
+!
+vlan 105
+ name CDS-Workstations
+!
+vlan 110
+ name Cisco-Wired-Mgmt
+!
+vlan 119
+ name Network-Operations
+!
+vlan 136
+ name Wireless-Office
+!
+vlan 153 
+!
+vlan 154
+ name PCI-Workstations
+!
+vlan 165
+ name Johnson_Controls
+!
+vlan 205
+ name ASA-TICKETMASTER
+!
+vlan 206
+ name ASA-TKTMSTR-VENDOR
+!
+vlan 300
+ name PRC-USERS300
+!
+vlan 301
+ name PRC-USERS301
+!
+vlan 302
+ name PRC-USERS302
+!
+vlan 303
+ name PRC-USERS303
+!
+vlan 304
+ name PRC-USERS304
+!
+vlan 305
+ name PRC-VOICE305
+!
+vlan 306
+ name PRC-VOICE306
+!
+vlan 307
+ name PRC-VOICE307
+!
+vlan 308
+ name PRC-VOICE308
+!         
+vlan 309
+ name PRC-VOICE309
+!
+vlan 310
+ name PRC-DEVICED310
+!
+vlan 311
+ name PRC-DEVICED311
+!
+vlan 312
+ name PRC-DEVICED312
+!
+vlan 313
+ name PRC-DEVICER313
+!
+vlan 314
+ name PRC-DEVICER314
+!
+vlan 315
+ name PRC-WIRELESS315
+!
+vlan 316
+ name PRC-WIRELESS316
+!
+vlan 317
+ name PRC-WIRELESS317
+!
+vlan 318
+ name PRC-WIRELESS318
+!
+vlan 319
+ name PRC-WIRELESS319
+!
+vlan 320
+ name PRC-KRONOS
+!
+vlan 321
+ name PRC-DEVICE-INFINITE
+!
+vlan 325
+ name PRC-RESERVA
+!
+vlan 360
+ name PRC-WKSTN
+!
+vlan 501
+ name DMZ-OUTSIDE-120
+!
+vlan 502
+ name DMZ-OUTSIDE-223
+!         
+vlan 503
+ name DMZ-OUTSIDE-97
+!
+vlan 504
+ name DMZ-OUTSIDE-3
+!
+vlan 777
+ name ASA-BINGO
+!
+vlan 778
+ name ASA-GCA
+!
+!
+class-map match-any system-cpp-police-topology-control
+  description Topology control
+class-map match-any system-cpp-police-sw-forward
+  description Sw forwarding, L2 LVX data, LOGGING
+class-map match-any system-cpp-default
+  description DHCP Snooping, EWLC control, EWCL data 
+class-map match-any system-cpp-police-sys-data
+  description Learning cache ovfl, Crypto Control, Exception, EGR Exception, NFL SAMPLED DATA, RPF Failed
+class-map match-any system-cpp-police-punt-webauth
+  description Punt Webauth
+class-map match-any system-cpp-police-l2lvx-control
+  description L2 LVX control packets
+class-map match-any system-cpp-police-forus
+  description Forus Address resolution and Forus traffic
+class-map match-any system-cpp-police-multicast-end-station
+  description MCAST END STATION
+class-map match-any system-cpp-police-multicast
+  description Transit Traffic and MCAST Data
+class-map match-any system-cpp-police-l2-control
+  description L2 control
+class-map match-any system-cpp-police-dot1x-auth
+  description DOT1X Auth
+class-map match-any system-cpp-police-data
+  description ICMP redirect, ICMP_GEN and BROADCAST
+class-map match-any system-cpp-police-stackwise-virt-control
+  description Stackwise Virtual
+class-map match-any non-client-nrt-class
+class-map match-any system-cpp-police-routing-control
+  description Routing control
+class-map match-any system-cpp-police-protocol-snooping
+  description Protocol snooping
+class-map match-any system-cpp-police-system-critical
+  description System Critical and Gold
+!
+policy-map system-cpp-policy
+!
+! 
+!         
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface Port-channel1
+ description link to CORE-VPC
+ switchport mode trunk
+ ip arp inspection trust
+ ip dhcp snooping trust
+!
+interface GigabitEthernet0/0
+ vrf forwarding Mgmt-vrf
+ no ip address
+ shutdown
+ speed 1000
+ negotiation auto
+!
+interface GigabitEthernet1/0/1
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/2
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/3
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/4
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/5
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/6
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/7
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/8
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/9
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/10
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/11
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/12
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/13
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/14
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/15
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/16
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/17
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/18
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/19
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/20
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/21
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/22
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/23
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/24
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/25
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/26
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/27
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/28
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/29
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/30
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/31
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/32
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/33
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/34
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/35
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/36
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!         
+interface GigabitEthernet1/0/37
+ description ise-port-config
+ switchport access vlan 310
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/38
+ description bad poe to something
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ shutdown
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/39
+ description old ap
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ shutdown
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/40
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/41
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/42
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/43
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/44
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/45
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/46
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/47
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/0/48
+ description ise-port-config
+ switchport mode access
+ ip flow monitor SOLAR_WINDS_MONITOR input
+ ip arp inspection limit rate 1000
+ ip access-group ACL-ALLOW in
+ authentication event fail action next-method
+ authentication event server dead action authorize voice
+ authentication host-mode multi-auth
+ authentication order mab dot1x
+ authentication priority dot1x mab
+ authentication port-control auto
+ authentication violation restrict
+ mab
+ storm-control broadcast level 20.00
+ storm-control multicast level 80.00
+ storm-control unicast level 90.00
+ storm-control action trap
+ macro description ise-port-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+!
+interface GigabitEthernet1/1/1
+!
+interface GigabitEthernet1/1/2
+!
+interface GigabitEthernet1/1/3
+!
+interface GigabitEthernet1/1/4
+!
+interface TenGigabitEthernet1/1/1
+ switchport mode trunk
+ ip arp inspection trust
+ channel-group 1 mode active
+ ip dhcp snooping trust
+!
+interface TenGigabitEthernet1/1/2
+ switchport mode trunk
+ ip arp inspection trust
+ channel-group 1 mode active
+ ip dhcp snooping trust
+!
+interface TenGigabitEthernet1/1/3
+ description neat-uplink-config
+ switchport mode access
+ ip arp inspection trust
+ authentication order dot1x
+ authentication priority dot1x
+ authentication port-control auto
+ authentication violation restrict
+ macro description neat-uplink-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ spanning-tree portfast trunk
+ ip dhcp snooping trust
+!
+interface TenGigabitEthernet1/1/4
+ description neat-uplink-config
+ switchport mode access
+ ip arp inspection trust
+ authentication order dot1x
+ authentication priority dot1x
+ authentication port-control auto
+ authentication violation restrict
+ macro description neat-uplink-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ spanning-tree portfast trunk
+ ip dhcp snooping trust
+!
+interface TenGigabitEthernet1/1/5
+ description neat-uplink-config
+ switchport mode access
+ ip arp inspection trust
+ authentication order dot1x
+ authentication priority dot1x
+ authentication port-control auto
+ authentication violation restrict
+ macro description neat-uplink-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ spanning-tree portfast trunk
+ ip dhcp snooping trust
+!
+interface TenGigabitEthernet1/1/6
+ description neat-uplink-config
+ switchport mode access
+ ip arp inspection trust
+ authentication order dot1x
+ authentication priority dot1x
+ authentication port-control auto
+ authentication violation restrict
+ macro description neat-uplink-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ spanning-tree portfast trunk
+ ip dhcp snooping trust
+!
+interface TenGigabitEthernet1/1/7
+ description neat-uplink-config
+ switchport mode access
+ ip arp inspection trust
+ authentication order dot1x
+ authentication priority dot1x
+ authentication port-control auto
+ authentication violation restrict
+ macro description neat-uplink-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ spanning-tree portfast trunk
+ ip dhcp snooping trust
+!
+interface TenGigabitEthernet1/1/8
+ description neat-uplink-config
+ switchport mode access
+ ip arp inspection trust
+ authentication order dot1x
+ authentication priority dot1x
+ authentication port-control auto
+ authentication violation restrict
+ macro description neat-uplink-config
+ dot1x pae authenticator
+ dot1x timeout tx-period 10
+ spanning-tree portfast trunk
+ ip dhcp snooping trust
+!
+interface FortyGigabitEthernet1/1/1
+!
+interface FortyGigabitEthernet1/1/2
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+interface Vlan110
+ ip address 192.168.0.21 255.255.0.0
+ ip helper-address 10.0.2.10
+ no ip redirects
+ no ip proxy-arp
+!
+ip default-gateway 10.10.1.1
+ip forward-protocol nd
+ip http server
+ip http authentication local
+ip http secure-server
+!
+ip ssh time-out 60
+ip ssh authentication-retries 2
+ip ssh version 2
+ip scp server enable
+!
+ip radius source-interface Vlan110 
+!
+ip access-list extended ACL-AGENT-REDIRECT
+ remark explicitly deny DNS from being redirected to address a bug
+ deny   udp any any eq domain
+ remark redirect HTTP traffic only
+ permit tcp any any eq www
+ remark all other traffic will be implictly denied fro the redirection
+ip access-list extended ACL-ALLOW
+ permit ip any any
+ip access-list extended ACL-DEFAULT
+ remark DHCP
+ permit udp any eq bootpc any eq bootps
+ remark DNS
+ permit udp any any eq domain
+ remark PING
+ permit icmp any any
+ remark PXE / TFTP
+ permit udp any any eq tftp
+ remark DROP THE REST
+ deny   ip any any log
+ remark DROP THE REST
+ip access-list extended ACL-WEBAUTH-REDIRECT
+ remark explicity deny DNS from being redirected to address a bug
+ deny   udp any any eq domain
+ remark redirect all applicable traffic to the ISE Server
+ permit tcp any any eq www
+ permit tcp any any eq 443
+ remark all other traffic will be implicityly denied from the redirection
+ip access-list extended WEBAUTH
+ permit ip any any
+ip access-list extended redirect
+ deny   ip any host 10.1.2.10
+ permit tcp any any eq www
+ permit tcp any any eq 443
+logging history informational
+logging host 10.19.2.200
+access-list 1 permit 10.19.0.0 0.0.255.255
+access-list 1 deny   any log
+!
+snmp-server community H1QY23L5674]hI3 RO
+snmp-server trap-source Vlan110
+snmp-server source-interface informs Vlan110
+snmp-server enable traps mac-notification change move threshold
+snmp-server host 10.19.2.200 version 2c H1QY23L5674]hI3  mac-notification
+tacacs-server directed-request
+!
+!
+radius-server attribute 6 on-for-login-auth
+radius-server attribute 8 include-in-access-req
+radius-server attribute 25 access-request include
+radius-server dead-criteria time 5 tries 3
+!
+!
+control-plane
+ service-policy input system-cpp-policy
+!
+banner login ^C **********************************************************************
+NOTICE:
+This computer system is the private property of its owner, whether
+individual, corporate or government. It is for authorized use only.
+Users (authorized or unauthorized) have no explicit or implicit
+expectation of privacy.
+Any or all uses of this system and all files on this system may be
+intercepted, monitored, recorded, copied, audited, inspected, and
+disclosed to your employer, to authorized site, government, and law
+enforcement personnel, as well as authorized officials of government
+agencies, both domestic and foreign.
+By using this system, the user consents to such interception,
+monitoring, recording, copying, auditing, inspection, and disclosure
+at the discretion of such personnel or officials. Unauthorized or
+improper use of this system may result in civil and criminal penalties
+and administrative or disciplinary action, as appropriate. By
+continuing to use this system you indicate your awareness of and
+consent to these terms and conditions of use. LOG OFF IMMEDIATELY if
+you do not agree to the conditions stated in this warning.
+**********************************************************************
+^C
+alias exec cc configure terminal
+alias exec sr show running-config
+alias exec siib show ip interface brief | i Vla|Loo|Po
+alias exec sir show ip route
+alias exec cir clear ip route *
+alias exec sis show int status
+alias exec svb show vlan brief
+alias exec ps sh proc cpu sorted | e 0.00%  0.00%  0.00%
+!
+line con 0
+ session-timeout 15 
+ exec-timeout 5 0
+ logging synchronous level all limit 5
+ stopbits 1
+line vty 0 4
+ session-timeout 15 
+ access-class 1 in
+ exec-timeout 5 0
+ logging synchronous level all limit 5
+ transport input ssh
+line vty 5 15
+ session-timeout 15 
+ access-class 1 in
+ exec-timeout 5 0
+ logging synchronous level all limit 5
+ transport input ssh
+!
+ntp source Vlan110
+ntp server 10.10.1.16
+ntp server 10.10.1.15 prefer
+!
+mac address-table notification mac-move
+!
+!
+!
+!
+!         
+end

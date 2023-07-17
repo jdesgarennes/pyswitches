@@ -6,6 +6,7 @@ from PyQt5.QtGui import QIcon, QPixmap, QFont
 from PyQt5.QtCore import Qt
 import urllib3
 from pyinfoblox import InfobloxWAPI
+import pyinfoblox 
  
 class SwitchConfig(QWidget):
     def __init__(self):
@@ -102,34 +103,36 @@ class SwitchConfig(QWidget):
 
 
          # Prompt the user for a username and password
-        username, ok1 = QInputDialog.getText(self, 'Input Dialog', 'Enter your username:')
-        password, ok2 = QInputDialog.getText(self, 'Input Dialog', 'Enter your password:', QLineEdit.Password)
+        username, ok1 = QInputDialog.getText(self, 'Input Dialog', 'Enter your Infoblox UI username:')
+        password, ok2 = QInputDialog.getText(self, 'Input Dialog', 'Enter your Infoblox UI password:', QLineEdit.Password)
 
         if ok1 and ok2:  # Proceed only if both inputs were provided
-            infoblox = InfobloxWAPI(
-                username=username,
-                password=password,
-                wapi='https://10.0.20.13/wapi/v1.1/'
-            )
+            try:
+                infoblox = InfobloxWAPI(
+                    username=username,
+                    password=password,
+                    wapi='https://10.0.20.13/wapi/v1.1/'
+                )
 
-            network_function = infoblox.network.function(
-            objref='network/ZG5zLm5ldHdvcmskMTAuMTAuMC4wLzE2LzA:10.10.0.0/16/default',
-            _function='next_available_ip',
-            num=1
-            )
+                network_function = infoblox.network.function(
+                    objref='network/ZG5zLm5ldHdvcmskMTAuMTAuMC4wLzE2LzA:10.10.0.0/16/default',
+                    _function='next_available_ip',
+                    num=1
+                )
 
-            print(network_function)  # For debugging
+                print(network_function)  # For debugging
        
 
-            next_ip = network_function['ips'][0]  # Modification here
+                next_ip = network_function['ips'][0]  # Modification here
 
-            self.mgmt_ip_entry.setText(next_ip)
+                self.mgmt_ip_entry.setText(next_ip)
 
-            # Display the next available IP in a popup
-            QMessageBox.information(self, "Next Available IP", f"The next available IP is: {next_ip}", buttons=QMessageBox.Ok, defaultButton=QMessageBox.Ok)
+                # Display the next available IP in a popup
+                QMessageBox.information(self, "Next Available IP", f"The next available IP is: {next_ip}", buttons=QMessageBox.Ok, defaultButton=QMessageBox.Ok)
+            except pyinfoblox.InfobloxWAPIException:
+                QMessageBox.warning(self, "Wrong credentials", "The entered username or password is incorrect. Please try again.", buttons=QMessageBox.Ok, defaultButton=QMessageBox.Ok)
         else:
             QMessageBox.warning(self, "Missing Information", "You must provide both a username and password.", buttons=QMessageBox.Ok, defaultButton=QMessageBox.Ok)
-            
             
     
     def generate_batch_config(self):
